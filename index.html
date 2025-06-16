@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edytor Tekstów HTML - Purlés</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+
+        .toolbar {
+            position: sticky;
+            top: 0;
+            background: white;
+            border-bottom: 1px solid #e1e5e9;
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .btn {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        .btn-format {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .btn-format.active {
+            background: #059669;
+        }
+
+        .btn-primary {
+            background: #059669;
+        }
+
+        .btn-primary:hover {
+            background: #047857;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .main-content {
+            display: flex;
+            height: calc(100vh - 180px);
+        }
+
+        .file-section {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #e1e5e9;
+            padding: 1.5rem;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .paste-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .paste-textarea {
+            width: 100%;
+            height: 120px;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            resize: vertical;
+            margin-bottom: 0.5rem;
+        }
+
+        .paste-textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+        }
+
+        .file-input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 1rem;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #f9fafb;
+        }
+
+        .file-input-label:hover {
+            border-color: #4f46e5;
+            background: #f0f9ff;
+        }
+
+        .file-info {
+            background: #f0f9ff;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #4f46e5;
+            margin-bottom: 1rem;
+        }
+
+        .editor-section {
+            flex: 1;
+            padding: 1.5rem;
+            overflow: auto;
+        }
+
+        .editable-content {
+            background: white;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 2rem;
+            min-height: 500px;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .editable-content a {
+            color: #2563eb;
+            text-decoration: underline;
+            background: rgba(37, 99, 235, 0.1);
+            padding: 1px 2px;
+            border-radius: 2px;
+        }
+
+        .editable-content a:hover {
+            background: rgba(37, 99, 235, 0.2);
+        }
+
+        .editable-content img {
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+
+        .editable-content img:hover {
+            border-color: #4f46e5;
+        }
+
+        .link-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .alt-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .link-modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            ring: 2px solid rgba(79, 70, 229, 0.1);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #059669;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 3000;
+        }
+
+        .success-message.show {
+            transform: translateX(0);
+        }
+
+        .divider {
+            width: 1px;
+            height: 2rem;
+            background: #e1e5e9;
+            margin: 0 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 style="display: flex; align-items: center; justify-content: flex-start;"><img src="https://purles.pl/wp-content/uploads/2022/04/logo.png" alt="Purles Logo" class="logo" height="40px" style="margin-right: 20px;"> Edytor Tekstów HTML z IDS - Purlés</h1>
+        <p>Proste narzędzie do edycji treści w plikach HTML bez znajomości kodowania</p>
+    </div>
+
+    <div class="toolbar">
+        <button class="btn btn-format" id="boldBtn" title="Pogrubienie (Ctrl+B)">B</button>
+        <button class="btn btn-format" id="italicBtn" title="Kursywa (Ctrl+I)">I</button>
+        <button class="btn btn-format" id="underlineBtn" title="Podkreślenie (Ctrl+U)">U</button>
+        <button class="btn btn-format" id="linkBtn" title="Dodaj link">🔗</button>
+        
+        <div class="divider"></div>
+        
+        <button class="btn btn-primary" id="saveBtn">
+            💾 Zapisz HTML
+        </button>
+        
+        <button class="btn btn-secondary" id="clearBtn">
+            🗑️ Wyczyść
+        </button>
+    </div>
+
+    <div class="main-content">
+        <div class="file-section">
+            <h3 style="margin-bottom: 1rem; color: #374151;">Załaduj HTML</h3>
+            
+            <div class="paste-section">
+                <h4 style="margin-bottom: 0.5rem; color: #374151; font-size: 0.9rem;">Wklej HTML ze schowka:</h4>
+                <textarea id="pasteArea" class="paste-textarea" placeholder="Wklej tutaj kod HTML..."></textarea>
+                <button class="btn btn-primary" id="loadFromPasteBtn" style="width: 100%; font-size: 0.9rem;">
+                    📋 Załaduj ze schowka
+                </button>
+            </div>
+            
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" class="file-input" accept=".html,.htm">
+                <label for="fileInput" class="file-input-label">
+                    📁 Lub wybierz plik HTML<br>
+                    <small style="color: #6b7280;">przeciągnij plik tutaj</small>
+                </label>
+            </div>
+
+            <div id="fileInfo" class="file-info" style="display: none;">
+                <strong>Załadowany plik:</strong><br>
+                <span id="fileName"></span><br>
+                <small id="fileSize"></small>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <h4 style="color: #374151; margin-bottom: 0.5rem;">Instrukcja:</h4>
+                <ol style="color: #6b7280; font-size: 0.9rem; line-height: 1.5;">
+                    <li>Załaduj plik HTML</li>
+                    <li>Zaznacz tekst do formatowania</li>
+                    <li>Użyj przycisków formatowania</li>
+					<li>Kliknij na obrazek, aby ustawić alt</li>
+                    <li>Zapisz zmodyfikowany plik</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="editor-section">
+            <div id="editableContent" class="editable-content" contenteditable="true">
+                <p style="color: #6b7280; text-align: center; margin-top: 4rem;">
+                    Załaduj plik HTML, aby rozpocząć edycję...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="linkModal" class="link-modal">
+        <div class="link-modal-content">
+            <h3 style="margin-bottom: 1rem; color: #374151;">Dodaj hiperlink</h3>
+            <div class="form-group">
+                <label class="form-label" for="linkText">Tekst do wyświetlenia:</label>
+                <input type="text" id="linkText" class="form-input" placeholder="np. Kliknij tutaj">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="linkUrl">Adres URL:</label>
+                <input type="url" id="linkUrl" class="form-input" placeholder="https://example.com">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="removeLinkBtn" style="margin-right: auto;">Usuń link</button>
+                <button class="btn btn-secondary" id="cancelLinkBtn">Anuluj</button>
+                <button class="btn btn-primary" id="confirmLinkBtn">Zapisz link</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="altModal" class="alt-modal">
+        <div class="link-modal-content">
+            <h3 style="margin-bottom: 1rem; color: #374151;">Edytuj tekst alternatywny (ALT)</h3>
+            <div class="form-group">
+                <label class="form-label" for="altText">Tekst alternatywny dla obrazka:</label>
+                <textarea id="altText" class="form-input" rows="3" placeholder="Opisz co przedstawia obrazek..."></textarea>
+                <small style="color: #6b7280; margin-top: 0.5rem; display: block;">
+                    Tekst alternatywny pomaga w SEO i dostępności. Może być pusty dla obrazków dekoracyjnych.
+                </small>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="cancelAltBtn">Anuluj</button>
+                <button class="btn btn-primary" id="confirmAltBtn">Zapisz ALT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="successMessage" class="success-message">
+        ✅ Plik został pomyślnie zapisany!
+    </div>
+<p style="text-align: center; margin-top: 2rem; color: #6b7280; font-size: 0.9rem;">
+  Designed by KS for <strong><a href="https://www.purles.pl" style="color: #8B5CF6; text-decoration: none;">Purlés</a></strong>
+</p>
+    <script>
+        let currentFileName = '';
+        let originalContent = '';
+        let currentSelection = null;
+        let currentImage = null;
+        let currentLink = null;
+
+        // Elementy DOM
+        const fileInput = document.getElementById('fileInput');
+        const pasteArea = document.getElementById('pasteArea');
+        const loadFromPasteBtn = document.getElementById('loadFromPasteBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const editableContent = document.getElementById('editableContent');
+        const linkModal = document.getElementById('linkModal');
+        const altModal = document.getElementById('altModal');
+        const successMessage = document.getElementById('successMessage');
+
+        // Przyciski
+        const boldBtn = document.getElementById('boldBtn');
+        const italicBtn = document.getElementById('italicBtn');
+        const underlineBtn = document.getElementById('underlineBtn');
+        const linkBtn = document.getElementById('linkBtn');
+        const saveBtn = document.getElementById('saveBtn');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // Ładowanie ze schowka
+        loadFromPasteBtn.addEventListener('click', () => {
+            const htmlContent = pasteArea.value.trim();
+            if (htmlContent) {
+                originalContent = htmlContent;
+                editableContent.innerHTML = htmlContent;
+                currentFileName = 'pasted_html';
+                
+                // Pokaż informacje
+                fileName.textContent = 'HTML ze schowka';
+                fileSize.textContent = `Rozmiar: ${(htmlContent.length / 1024).toFixed(2)} KB`;
+                fileInfo.style.display = 'block';
+                
+                pasteArea.value = '';
+            } else {
+                alert('Proszę wkleić kod HTML w pole tekstowe');
+            }
+        });
+
+        // Ładowanie pliku
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && (file.type === 'text/html' || file.name.endsWith('.html') || file.name.endsWith('.htm'))) {
+                currentFileName = file.name.replace(/\.(html|htm)$/i, '');
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    originalContent = e.target.result;
+                    editableContent.innerHTML = originalContent;
+                    
+                    // Pokaż informacje o pliku
+                    fileName.textContent = file.name;
+                    fileSize.textContent = `Rozmiar: ${(file.size / 1024).toFixed(2)} KB`;
+                    fileInfo.style.display = 'block';
+                };
+                reader.readAsText(file);
+            } else {
+                alert('Proszę wybrać plik HTML (.html lub .htm)');
+            }
+        }
+
+        // Drag & Drop
+        const fileInputLabel = document.querySelector('.file-input-label');
+        
+        fileInputLabel.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInputLabel.style.borderColor = '#4f46e5';
+            fileInputLabel.style.background = '#f0f9ff';
+        });
+
+        fileInputLabel.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            fileInputLabel.style.borderColor = '#d1d5db';
+            fileInputLabel.style.background = '#f9fafb';
+        });
+
+        fileInputLabel.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect({ target: { files: files } });
+            }
+            fileInputLabel.style.borderColor = '#d1d5db';
+            fileInputLabel.style.background = '#f9fafb';
+        });
+
+        // Zapisywanie aktualnego zaznaczenia
+        editableContent.addEventListener('mouseup', saveSelection);
+        editableContent.addEventListener('keyup', saveSelection);
+
+        function saveSelection() {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0 && !selection.isCollapsed) {
+                currentSelection = selection.getRangeAt(0).cloneRange();
+            }
+        }
+
+        function restoreSelection() {
+            if (currentSelection) {
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(currentSelection);
+                return true;
+            }
+            return false;
+        }
+
+        // Formatowanie tekstu - zachowuje zaznaczenie
+        boldBtn.addEventListener('click', () => {
+            if (restoreSelection()) {
+                document.execCommand('bold');
+                saveSelection(); // Zapisz zaznaczenie po formatowaniu
+            }
+            flashButton(boldBtn);
+        });
+
+        italicBtn.addEventListener('click', () => {
+            if (restoreSelection()) {
+                document.execCommand('italic');
+                saveSelection(); // Zapisz zaznaczenie po formatowaniu
+            }
+            flashButton(italicBtn);
+        });
+
+        underlineBtn.addEventListener('click', () => {
+            if (restoreSelection()) {
+                document.execCommand('underline');
+                saveSelection(); // Zapisz zaznaczenie po formatowaniu
+            }
+            flashButton(underlineBtn);
+        });
+
+        linkBtn.addEventListener('click', () => {
+            if (!currentSelection) {
+                alert('Proszę najpierw zaznaczyć tekst, który ma być linkiem');
+                return;
+            }
+
+            if (!restoreSelection()) {
+                alert('Proszę zaznaczyć tekst, który ma być linkiem');
+                return;
+            }
+
+            const selection = window.getSelection();
+            const selectedText = selection.toString();
+            
+            if (!selectedText) {
+                alert('Proszę zaznaczyć tekst, który ma być linkiem');
+                return;
+            }
+
+            // Sprawdź czy zaznaczony tekst to już istniejący link
+            let existingLink = null;
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const container = range.commonAncestorContainer;
+                
+                // Znajdź rodzica który jest linkiem
+                let parent = container.nodeType === Node.TEXT_NODE ? container.parentNode : container;
+                while (parent && parent !== editableContent) {
+                    if (parent.tagName === 'A') {
+                        existingLink = parent;
+                        break;
+                    }
+                    parent = parent.parentNode;
+                }
+            }
+
+            // Zapisz referencję do edytowanego linka
+            currentLink = existingLink;
+
+            // Wypełnij modal
+            if (existingLink) {
+                // Edycja istniejącego linka
+                document.getElementById('linkText').value = existingLink.textContent;
+                
+                // Pobierz oryginalny href bez modyfikacji przeglądarki
+                let originalHref = existingLink.getAttribute('href');
+                document.getElementById('linkUrl').value = originalHref || existingLink.href;
+                
+                // Pokaż przycisk usuwania i zmień tekst
+                document.getElementById('removeLinkBtn').style.display = 'block';
+                document.getElementById('confirmLinkBtn').textContent = 'Aktualizuj link';
+            } else {
+                // Nowy link
+                document.getElementById('linkText').value = selectedText;
+                document.getElementById('linkUrl').value = '';
+                
+                // Ukryj przycisk usuwania i przywróć oryginalny tekst
+                document.getElementById('removeLinkBtn').style.display = 'none';
+                document.getElementById('confirmLinkBtn').textContent = 'Dodaj link';
+            }
+            
+            linkModal.style.display = 'flex';
+            
+            // Fokus na pole URL
+            setTimeout(() => {
+                document.getElementById('linkUrl').focus();
+            }, 100);
+        });
+
+        // Kliknięcie w obrazek - edycja ALT
+        editableContent.addEventListener('click', (e) => {
+            if (e.target.tagName === 'IMG') {
+                e.preventDefault();
+                currentImage = e.target;
+                
+                // Wypełnij modal obecnym ALT
+                document.getElementById('altText').value = currentImage.alt || '';
+                altModal.style.display = 'flex';
+                
+                // Fokus na pole tekstowe
+                setTimeout(() => {
+                    document.getElementById('altText').focus();
+                }, 100);
+            }
+        });
+
+        // Modal ALT
+        document.getElementById('confirmAltBtn').addEventListener('click', () => {
+            const altText = document.getElementById('altText').value;
+            
+            if (currentImage) {
+                currentImage.alt = altText;
+            }
+            
+            altModal.style.display = 'none';
+            
+            // Zachowaj pozycję scrollowania
+            setTimeout(() => {
+                editableContent.focus();
+                if (currentImage) {
+                    currentImage.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                }
+            }, 100);
+        });
+
+        document.getElementById('cancelAltBtn').addEventListener('click', () => {
+            altModal.style.display = 'none';
+            editableContent.focus();
+        });
+
+        // Zamknij modal ALT przy kliknięciu tła
+        altModal.addEventListener('click', (e) => {
+            if (e.target === altModal) {
+                altModal.style.display = 'none';
+                editableContent.focus();
+            }
+        });
+
+        // Enter w polu ALT potwierdza zmiany
+        document.getElementById('altText').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('confirmAltBtn').click();
+            }
+        });
+
+        // Modal linka
+        document.getElementById('confirmLinkBtn').addEventListener('click', () => {
+            const text = document.getElementById('linkText').value;
+            const url = document.getElementById('linkUrl').value;
+            
+            if (!text || !url) {
+                alert('Proszę wypełnić wszystkie pola');
+                return;
+            }
+
+            if (currentLink) {
+                // Aktualizacja istniejącego linka
+                currentLink.textContent = text;
+                currentLink.href = url;
+                currentLink.setAttribute('href', url);
+                
+                // Zaznacz zaktualizowany link
+                const range = document.createRange();
+                range.selectNode(currentLink);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                currentSelection = range.cloneRange();
+            } else {
+                // Tworzenie nowego linka
+                if (!restoreSelection()) {
+                    alert('Błąd: utracono zaznaczenie tekstu');
+                    return;
+                }
+                
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.textContent = text;
+                    // Stylowanie tylko dla podglądu w edytorze
+                    link.style.color = '#2563eb';
+                    link.style.textDecoration = 'underline';
+                    link.style.background = 'rgba(37, 99, 235, 0.1)';
+                    link.style.padding = '1px 2px';
+                    link.style.borderRadius = '2px';
+                    link.style.display = 'inline';
+                    
+                    range.insertNode(link);
+                    
+                    // Ustaw zaznaczenie na utworzony link
+                    const newRange = document.createRange();
+                    newRange.selectNode(link);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                    
+                    // Zapisz nowe zaznaczenie (link)
+                    currentSelection = newRange.cloneRange();
+                }
+            }
+            
+            linkModal.style.display = 'none';
+            editableContent.focus();
+        });
+
+        // Usuwanie linka
+        document.getElementById('removeLinkBtn').addEventListener('click', () => {
+            if (currentLink) {
+                // Zastąp link zwykłym tekstem
+                const text = currentLink.textContent;
+                const textNode = document.createTextNode(text);
+                currentLink.parentNode.replaceChild(textNode, currentLink);
+                
+                // Zaznacz tekst po usunięciu linka
+                const range = document.createRange();
+                range.selectNode(textNode);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                currentSelection = range.cloneRange();
+            }
+            
+            linkModal.style.display = 'none';
+            editableContent.focus();
+        });
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        document.getElementById('cancelLinkBtn').addEventListener('click', () => {
+            linkModal.style.display = 'none';
+            editableContent.focus();
+        });
+
+        // Zamknij modal przy kliknięciu tła
+        linkModal.addEventListener('click', (e) => {
+            if (e.target === linkModal) {
+                linkModal.style.display = 'none';
+                editableContent.focus();
+            }
+        });
+
+        // Enter w polu URL potwierdza link
+        document.getElementById('linkUrl').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('confirmLinkBtn').click();
+            }
+        });
+
+        // Funkcja do krótkiego podświetlenia przycisku
+        function flashButton(button) {
+            button.classList.add('active');
+            setTimeout(() => {
+                button.classList.remove('active');
+            }, 200);
+        }
+
+        // Skróty klawiszowe
+        editableContent.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 'b':
+                        e.preventDefault();
+                        boldBtn.click();
+                        break;
+                    case 'i':
+                        e.preventDefault();
+                        italicBtn.click();
+                        break;
+                    case 'u':
+                        e.preventDefault();
+                        underlineBtn.click();
+                        break;
+                    case 'z':
+                        // Pozwól na naturalne Ctrl+Z (undo)
+                        // Nie robimy preventDefault()
+                        break;
+                    case 'y':
+                        // Pozwól na naturalne Ctrl+Y (redo)
+                        // Nie robimy preventDefault()
+                        break;
+                }
+            }
+        });
+
+        // Zapisywanie pliku
+        saveBtn.addEventListener('click', () => {
+            if (!currentFileName) {
+                alert('Najpierw załaduj plik HTML lub wklej kod ze schowka');
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = now.getFullYear() + '_' + 
+                          String(now.getMonth() + 1).padStart(2, '0') + '_' + 
+                          String(now.getDate()).padStart(2, '0');
+            
+            const newFileName = `${currentFileName}_${dateStr}.html`;
+            
+            // Wyczyść style podglądu z linków przed zapisaniem
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = editableContent.innerHTML;
+            
+            const links = tempDiv.querySelectorAll('a');
+            links.forEach(link => {
+                link.removeAttribute('style');
+            });
+            
+            const content = tempDiv.innerHTML;
+
+            // Stwórz i pobierz plik
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = newFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Pokaż komunikat sukcesu
+            successMessage.classList.add('show');
+            setTimeout(() => {
+                successMessage.classList.remove('show');
+            }, 3000);
+        });
+
+        // Czyszczenie
+        clearBtn.addEventListener('click', () => {
+            if (confirm('Czy na pewno chcesz wyczyścić zawartość?')) {
+                editableContent.innerHTML = '<p style="color: #6b7280; text-align: center; margin-top: 4rem;">Załaduj plik HTML, aby rozpocząć edycję...</p>';
+                currentFileName = '';
+                fileInfo.style.display = 'none';
+                fileInput.value = '';
+                pasteArea.value = '';
+                currentSelection = null;
+            }
+        });
+    </script>
+</body>
+</html>

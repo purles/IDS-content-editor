@@ -301,7 +301,7 @@
 </head>
 <body>
     <div class="header">
-        <h1 style="display: flex; align-items: center; justify-content: flex-start;"><img src="https://purles.pl/wp-content/uploads/2022/04/logo.png" alt="Purles Logo" class="logo" height="40px" style="margin-right: 20px;"> Edytor Tekstów HTML z IDS - Purlés</h1>
+      <h1 style="display: flex; align-items: center; justify-content: flex-start;"><img src="https://purles.pl/wp-content/uploads/2022/04/logo.png" alt="Purles Logo" class="logo" height="40px" style="margin-right: 20px;"> Edytor Tekstów HTML z IDS - Purlés</h1>
         <p>Proste narzędzie do edycji treści w plikach HTML bez znajomości kodowania</p>
     </div>
 
@@ -315,6 +315,10 @@
         
         <button class="btn btn-primary" id="saveBtn">
             💾 Zapisz HTML
+        </button>
+        
+        <button class="btn btn-primary" id="copyBtn">
+            📋 Kopiuj HTML
         </button>
         
         <button class="btn btn-secondary" id="clearBtn">
@@ -436,6 +440,7 @@
         const underlineBtn = document.getElementById('underlineBtn');
         const linkBtn = document.getElementById('linkBtn');
         const saveBtn = document.getElementById('saveBtn');
+        const copyBtn = document.getElementById('copyBtn');
         const clearBtn = document.getElementById('clearBtn');
 
         // Ładowanie ze schowka
@@ -872,6 +877,58 @@
             setTimeout(() => {
                 successMessage.classList.remove('show');
             }, 3000);
+        });
+
+        // Kopiowanie HTML do schowka
+        copyBtn.addEventListener('click', async () => {
+            if (!currentFileName && editableContent.innerHTML.includes('Załaduj plik HTML')) {
+                alert('Najpierw załaduj plik HTML lub wklej kod ze schowka');
+                return;
+            }
+
+            // Wyczyść style podglądu z linków przed kopiowaniem
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = editableContent.innerHTML;
+            
+            const links = tempDiv.querySelectorAll('a');
+            links.forEach(link => {
+                link.removeAttribute('style');
+            });
+            
+            const cleanHtml = tempDiv.innerHTML;
+
+            try {
+                await navigator.clipboard.writeText(cleanHtml);
+                
+                // Pokaż komunikat sukcesu
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '✅ Skopiowano!';
+                copyBtn.style.background = '#059669';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.background = '#4f46e5';
+                }, 2000);
+                
+            } catch (err) {
+                // Fallback dla starszych przeglądarek
+                const textArea = document.createElement('textarea');
+                textArea.value = cleanHtml;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                // Pokaż komunikat sukcesu
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '✅ Skopiowano!';
+                copyBtn.style.background = '#059669';
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.background = '#4f46e5';
+                }, 2000);
+            }
         });
 
         // Czyszczenie
